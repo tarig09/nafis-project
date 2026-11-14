@@ -1,6 +1,6 @@
 # نموذج البيانات
 
-المصدر الرسمي: [`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql).
+المصدر الرسمي: مجلد `supabase/migrations` (الملفات 0001 إلى 0008 بالترتيب).
 
 ## الجداول
 `profiles` · `admins` · `follows` · `posts` · `conversations` · `messages` · `orders` · `deliveries` · `disputes` · `ledger_entries` · `ratings` · `reports` · `verification_requests` · `feedback` · `notifications` · `device_tokens`

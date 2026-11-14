@@ -45,7 +45,7 @@ scripts/                   أدوات مساعدة (إنشاء Issues)
 npm i -g supabase
 supabase init            # ينشئ config.toml فقط ولا يمس migrations
 supabase link --project-ref <PROJECT_REF>
-supabase db push         # يطبق supabase/migrations/0001_init.sql
+supabase db push         # يطبق supabase/migrations/ (الملفات 0001 إلى 0008 بالترتيب)
 ```
 ثم من لوحة Supabase: فعّل Google في Auth، وفعّل إضافة `pg_cron`، وأضف نفسك مديراً:
 ```sql

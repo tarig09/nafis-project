@@ -1,0 +1,19 @@
+# Flutter
+.dart_tool/
+build/
+.flutter-plugins*
+*.iml
+.idea/
+# Secrets
+.env
+.env.*
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+supabase/.temp/
+supabase/.branches/
+# Node
+node_modules/
+dist/
+# OS
+.DS_Store

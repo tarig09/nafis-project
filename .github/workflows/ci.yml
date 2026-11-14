@@ -4,20 +4,57 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: write
+
 jobs:
   app:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - id: detect
-        run: echo "has=$([ -f app/pubspec.yaml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
       - uses: subosito/flutter-action@v2
-        if: steps.detect.outputs.has == 'true'
         with:
           channel: stable
-      - if: steps.detect.outputs.has == 'true'
+          cache: true
+      - name: Generate Android platform files if missing
         working-directory: app
-        run: flutter pub get && flutter analyze && flutter test
+        run: |
+          if [ ! -d android ]; then
+            flutter create --platforms=android --org sd.nafis --project-name nafis .
+          fi
+          python3 tool/patch_android.py
+      - working-directory: app
+        run: flutter pub get
+      - working-directory: app
+        run: flutter analyze --no-fatal-infos
+      - working-directory: app
+        run: flutter test
+      - name: Build APK
+        working-directory: app
+        run: >
+          flutter build apk --release
+          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          --dart-define=SUPABASE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nafis-apk
+          path: app/build/app/outputs/flutter-apk/app-release.apk
+      - name: Publish APK to Releases
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: ncipollo/release-action@v1
+        with:
+          tag: build-latest
+          name: "Nafis — آخر بناء"
+          body: "ملف APK لآخر commit على main (للتجربة فقط)"
+          artifacts: app/build/app/outputs/flutter-apk/app-release.apk
+          allowUpdates: true
+          prerelease: true
+          replacesArtifacts: true
+          commit: ${{ github.sha }}
 
   supabase:
     runs-on: ubuntu-latest

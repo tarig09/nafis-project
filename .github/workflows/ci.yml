@@ -1,25 +1,35 @@
 name: CI
 on:
-  push: { branches: [main] }
+  push:
+    branches: [main]
   pull_request:
+
 jobs:
   app:
-    if: ${{ hashFiles('app/pubspec.yaml') != '' }}
     runs-on: ubuntu-latest
-    defaults: { run: { working-directory: app } }
     steps:
       - uses: actions/checkout@v4
+      - id: detect
+        run: echo "has=$([ -f app/pubspec.yaml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - uses: subosito/flutter-action@v2
-        with: { channel: stable }
-      - run: flutter pub get
-      - run: flutter analyze
-      - run: flutter test
+        if: steps.detect.outputs.has == 'true'
+        with:
+          channel: stable
+      - if: steps.detect.outputs.has == 'true'
+        working-directory: app
+        run: flutter pub get && flutter analyze && flutter test
+
   supabase:
-    if: ${{ hashFiles('supabase/migrations/*.sql') != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - id: detect
+        run: echo "has=$(ls supabase/migrations/*.sql >/dev/null 2>&1 && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - uses: supabase/setup-cli@v1
-      - run: supabase start
-      - run: supabase db reset
-      - run: supabase stop
+        if: steps.detect.outputs.has == 'true'
+      - if: steps.detect.outputs.has == 'true'
+        run: |
+          supabase init --force || true
+          supabase start
+          supabase db reset
+          supabase stop

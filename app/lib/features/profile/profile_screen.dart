@@ -156,7 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             backgroundColor: _following ? Colors.black45 : AppColors.indigo),
         child: Text(_following ? 'إلغاء المتابعة' : 'متابعة'),
       ),
-      if (p['role'] == 'freelancer' && Session.isClient) ...[
+      if (p['role'] == 'freelancer' && AppSession.isClient) ...[
         const SizedBox(height: 8),
         FilledButton(
           onPressed: () => _toast('طلب الخدمة عبر الدردشة قريباً'),

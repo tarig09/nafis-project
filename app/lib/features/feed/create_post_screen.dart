@@ -65,7 +65,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final special = Session.isClient
+    final special = AppSession.isClient
         ? const ButtonSegment<String>(value: 'request', label: Text('طلب خدمة'))
         : const ButtonSegment<String>(value: 'offer', label: Text('تقديم خدمة'));
     return Scaffold(

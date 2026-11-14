@@ -126,7 +126,7 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    final warned = Session.me?['status'] == 'warned';
+    final warned = AppSession.me?['status'] == 'warned';
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(

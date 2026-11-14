@@ -16,7 +16,7 @@ class AuthGate extends StatelessWidget {
       builder: (context, snap) {
         final session = supa.auth.currentSession;
         if (session == null) {
-          Session.me = null;
+          AppSession.me = null;
           return const LoginScreen();
         }
         return ProfileGate(key: ValueKey(session.user.id));
@@ -72,7 +72,7 @@ class _ProfileGateState extends State<ProfileGate> {
           );
         }
         final p = snap.data!;
-        Session.me = p;
+        AppSession.me = p;
         if (p['status'] == 'banned') return const BannedScreen();
         if (p['role'] == null) return RoleScreen(onDone: _reload);
         return const HomeShell();

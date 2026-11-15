@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -27,6 +27,7 @@ jobs:
             flutter create --platforms=android --org sd.nafis --project-name nafis .
           fi
           python3 tool/patch_android.py
+          python3 tool/patch_gradle.py
       - working-directory: app
         run: flutter pub get
       - working-directory: app

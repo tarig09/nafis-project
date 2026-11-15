@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../core/session.dart';
 import '../../core/supa.dart';
 import '../../core/theme.dart';
+import '../../data/posts_repo.dart';
 import '../../widgets/logo.dart';
+import '../chat/chats_screen.dart';
 import '../feed/create_post_screen.dart';
 import '../feed/feed_screen.dart';
+import '../notifications/notifications_screen.dart';
 import '../profile/profile_screen.dart';
 
 class HomeShell extends StatefulWidget {
@@ -19,8 +24,41 @@ class _HomeShellState extends State<HomeShell> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _feedKey = GlobalKey<FeedScreenState>();
   int _tab = 0;
+  int _unreadMsgs = 0;
+  int _unreadNotifs = 0;
+  Timer? _timer;
 
   String get _uid => supa.auth.currentUser!.id;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshCounts();
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) => _refreshCounts());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refreshCounts() async {
+    try {
+      final convs = asRows(await supa.rpc('my_conversations'));
+      final msgs = convs.fold<int>(0, (a, c) => a + ((c['unread'] as num?)?.toInt() ?? 0));
+      final notifs = await supa
+          .from('notifications')
+          .select('id')
+          .isFilter('read_at', null)
+          .limit(99);
+      if (!mounted) return;
+      setState(() {
+        _unreadMsgs = msgs;
+        _unreadNotifs = (notifs as List).length;
+      });
+    } catch (_) {}
+  }
 
   void _toast(String m) {
     if (!mounted) return;
@@ -28,6 +66,22 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   void _soon(String what) => _toast('$what قريباً');
+
+  Future<void> _openChats() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ChatsScreen()),
+    );
+    _refreshCounts();
+  }
+
+  Future<void> _openNotifications() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+    );
+    _refreshCounts();
+  }
 
   Future<void> _compose() async {
     final ok = await Navigator.push<bool>(
@@ -134,8 +188,13 @@ class _HomeShellState extends State<HomeShell> {
         title: const NafisLogo(size: 26),
         actions: [
           IconButton(
-              onPressed: () => _soon('الإشعارات'),
-              icon: const Icon(Icons.notifications_none, color: AppColors.indigo)),
+            onPressed: _openNotifications,
+            icon: Badge(
+              isLabelVisible: _unreadNotifs > 0,
+              label: Text('$_unreadNotifs'),
+              child: const Icon(Icons.notifications_none, color: AppColors.indigo),
+            ),
+          ),
           IconButton(
               onPressed: () => _scaffoldKey.currentState?.openDrawer(),
               icon: const Icon(Icons.more_horiz, color: AppColors.indigo)),
@@ -172,11 +231,15 @@ class _HomeShellState extends State<HomeShell> {
             left: 40,
             child: FloatingActionButton.small(
               heroTag: null,
-              onPressed: () => _soon('الرسائل'),
+              onPressed: _openChats,
               backgroundColor: Colors.white,
               foregroundColor: AppColors.indigo,
               elevation: 3,
-              child: const Icon(Icons.chat_bubble_outline),
+              child: Badge(
+                isLabelVisible: _unreadMsgs > 0,
+                label: Text('$_unreadMsgs'),
+                child: const Icon(Icons.chat_bubble_outline),
+              ),
             ),
           ),
         ],

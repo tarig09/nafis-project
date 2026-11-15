@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../core/format.dart';
+import '../core/session.dart';
+import '../core/supa.dart';
 import '../core/theme.dart';
+import '../features/chat/open_chat.dart';
 import '../features/profile/profile_screen.dart';
 import '../models/post.dart';
 import 'post_images.dart';
@@ -28,6 +31,14 @@ class PostCard extends StatelessWidget {
       default:
         return Colors.black45;
     }
+  }
+
+  bool get _canContact {
+    final me = supa.auth.currentUser?.id;
+    if (me == null || me == post.authorId) return false;
+    if (post.type == 'request') return AppSession.isFreelancer;
+    if (post.type == 'offer') return AppSession.isClient;
+    return false;
   }
 
   @override
@@ -118,6 +129,19 @@ class PostCard extends StatelessWidget {
                       style: const TextStyle(
                           color: AppColors.indigo, fontSize: 13)))
                   .toList(),
+            ),
+          ],
+          if (_canContact) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: OutlinedButton.icon(
+                onPressed: () => openChatWith(context, post.authorId),
+                icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                label: Text(post.type == 'request'
+                    ? 'تواصل مع طالب الخدمة'
+                    : 'تواصل مع مقدم الخدمة'),
+              ),
             ),
           ],
         ],

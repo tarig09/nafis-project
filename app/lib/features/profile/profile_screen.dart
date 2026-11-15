@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../data/posts_repo.dart';
 import '../../models/post.dart';
 import '../../widgets/post_card.dart';
+import '../chat/open_chat.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
@@ -159,7 +160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (p['role'] == 'freelancer' && AppSession.isClient) ...[
         const SizedBox(height: 8),
         FilledButton(
-          onPressed: () => _toast('طلب الخدمة عبر الدردشة قريباً'),
+          onPressed: () => openChatWith(context, widget.userId),
           style: FilledButton.styleFrom(backgroundColor: AppColors.green),
           child: const Text('طلب خدمة'),
         ),

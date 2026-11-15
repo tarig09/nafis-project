@@ -7,6 +7,7 @@ import '../../core/session.dart';
 import '../../core/supa.dart';
 import '../../core/theme.dart';
 import '../../data/posts_repo.dart';
+import 'order_sheet.dart';
 
 class ChatScreen extends StatefulWidget {
   final String conversationId;
@@ -330,7 +331,11 @@ class _ChatScreenState extends State<ChatScreen> {
             Padding(
               padding: const EdgeInsetsDirectional.only(end: 10),
               child: FilledButton(
-                onPressed: () => _toast('نموذج طلب الخدمة والدفع يأتي في المرحلة القادمة'),
+                onPressed: () async {
+                  final ok = await showOrderSheet(context,
+                      freelancerId: _otherId, conversationId: widget.conversationId);
+                  if (ok == true) _toast('تم إنشاء الطلب، خطوة الدفع قادمة');
+                },
                 style: FilledButton.styleFrom(backgroundColor: AppColors.green),
                 child: const Text('طلب الخدمة'),
               ),

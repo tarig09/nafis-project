@@ -1,3 +1,4 @@
+# يعطّل lint الخاص بالإصدار (ينهار على JDK قديم مع بعض الإضافات) دون التأثير على التطبيق
 import pathlib, re
 p = pathlib.Path('android/app/build.gradle.kts')
 s = p.read_text(encoding='utf-8')

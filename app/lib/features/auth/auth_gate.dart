@@ -5,6 +5,7 @@ import '../../core/session.dart';
 import '../../core/supa.dart';
 import '../home/home_shell.dart';
 import 'auth_screens.dart';
+import 'login_screen.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});

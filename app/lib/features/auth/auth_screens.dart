@@ -1,73 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config.dart';
 import '../../core/supa.dart';
 import '../../core/theme.dart';
-import '../../widgets/logo.dart';
-
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
-
-  @override
-  State<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  bool _busy = false;
-
-  Future<void> _signIn() async {
-    setState(() => _busy = true);
-    try {
-      await supa.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: Config.redirect,
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('تعذر تسجيل الدخول')));
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            children: [
-              const Spacer(flex: 3),
-              const NafisLogo(size: 64),
-              const SizedBox(height: 16),
-              const Text('منصة سودانية للتواصل وسوق العمل الحر',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.black54)),
-              const Spacer(flex: 3),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: FilledButton.icon(
-                  onPressed: _busy ? null : _signIn,
-                  icon: const Icon(Icons.login),
-                  label: const Text('الدخول بحساب Google'),
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text('للأفراد والفرق فقط. لا تسجيل للشركات.',
-                  style: TextStyle(fontSize: 12, color: Colors.black45)),
-              const Spacer(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class RoleScreen extends StatefulWidget {
   final VoidCallback onDone;

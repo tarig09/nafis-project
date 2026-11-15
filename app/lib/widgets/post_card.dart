@@ -3,6 +3,7 @@ import '../core/format.dart';
 import '../core/theme.dart';
 import '../features/profile/profile_screen.dart';
 import '../models/post.dart';
+import 'post_images.dart';
 
 class PostCard extends StatelessWidget {
   final Post post;
@@ -104,6 +105,10 @@ class PostCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(post.body, style: const TextStyle(height: 1.6)),
+          if (post.images.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            PostImages(urls: post.images),
+          ],
           if (post.hashtags.isNotEmpty) ...[
             const SizedBox(height: 8),
             Wrap(

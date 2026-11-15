@@ -4,6 +4,7 @@ class Post {
   final String type;
   final String body;
   final List<String> hashtags;
+  final List<String> images;
   final DateTime createdAt;
   final Map<String, dynamic>? author;
 
@@ -13,6 +14,7 @@ class Post {
     required this.type,
     required this.body,
     required this.hashtags,
+    this.images = const [],
     required this.createdAt,
     this.author,
   });
@@ -24,6 +26,7 @@ class Post {
       type: m['type'] as String,
       body: m['body'] as String,
       hashtags: List<String>.from(m['hashtags'] as List? ?? const []),
+      images: List<String>.from(m['images'] as List? ?? const []),
       createdAt: DateTime.parse(m['created_at'] as String).toLocal(),
       author: author,
     );

@@ -11,6 +11,7 @@ import '../chat/chats_screen.dart';
 import '../feed/create_post_screen.dart';
 import '../feed/feed_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../orders/orders_screen.dart';
 import '../profile/profile_screen.dart';
 
 class HomeShell extends StatefulWidget {
@@ -165,7 +166,7 @@ class _HomeShellState extends State<HomeShell> {
               child: Row(children: [NafisLogo(size: 30)]),
             ),
             const Divider(height: 1),
-            _item(Icons.assignment_outlined, 'طلباتي', () => _soon('شاشة الطلبات')),
+            _item(Icons.assignment_outlined, 'طلباتي', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdersScreen()))),
             _item(Icons.feedback_outlined, 'الشكاوى والمقترحات', _feedback),
             _item(Icons.settings_outlined, 'الإعدادات', () => _soon('الإعدادات')),
             _item(Icons.call_outlined, 'تواصل معنا', () => _soon('بيانات التواصل')),

@@ -11,7 +11,39 @@ import 'post_images.dart';
 class PostCard extends StatelessWidget {
   final Post post;
   final bool linkAuthor;
-  const PostCard({super.key, required this.post, this.linkAuthor = true});
+  final VoidCallback? onDeleted;
+  const PostCard(
+      {super.key, required this.post, this.linkAuthor = true, this.onDeleted});
+
+  Future<void> _delete(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('حذف المنشور؟'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('إلغاء')),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('حذف')),
+          ],
+        ),
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await supa.from('posts').delete().eq('id', post.id);
+      onDeleted?.call();
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('تعذر حذف المنشور')));
+      }
+    }
+  }
 
   static const _labels = {
     'general': 'عام',
@@ -111,6 +143,13 @@ class PostCard extends StatelessWidget {
                       style: TextStyle(
                           fontSize: 12, color: c, fontWeight: FontWeight.w600)),
                 ),
+                if (supa.auth.currentUser?.id == post.authorId)
+                  PopupMenuButton<String>(
+                    onSelected: (_) => _delete(context),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'delete', child: Text('حذف المنشور')),
+                    ],
+                  ),
               ],
             ),
           ),

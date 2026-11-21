@@ -13,6 +13,8 @@ import '../feed/feed_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../orders/orders_screen.dart';
 import '../profile/profile_screen.dart';
+import '../settings/contact_screen.dart';
+import '../settings/settings_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -168,8 +170,8 @@ class _HomeShellState extends State<HomeShell> {
             const Divider(height: 1),
             _item(Icons.assignment_outlined, 'طلباتي', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdersScreen()))),
             _item(Icons.feedback_outlined, 'الشكاوى والمقترحات', _feedback),
-            _item(Icons.settings_outlined, 'الإعدادات', () => _soon('الإعدادات')),
-            _item(Icons.call_outlined, 'تواصل معنا', () => _soon('بيانات التواصل')),
+            _item(Icons.settings_outlined, 'الإعدادات', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))),
+            _item(Icons.call_outlined, 'تواصل معنا', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactScreen()))),
             const Spacer(),
             const Divider(height: 1),
             _item(Icons.logout, 'تسجيل الخروج', () => supa.auth.signOut()),

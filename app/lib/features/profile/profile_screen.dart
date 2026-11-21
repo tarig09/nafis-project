@@ -230,7 +230,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Center(child: Text('لا منشورات بعد')),
             )
           else
-            ..._posts.map((e) => PostCard(post: e, linkAuthor: false)),
+            ..._posts.map((e) => PostCard(post: e, linkAuthor: false, onDeleted: _load)),
         ],
       ),
     );

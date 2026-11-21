@@ -112,7 +112,7 @@ class FeedScreenState extends State<FeedScreen> {
           else
             SliverList(
               delegate: SliverChildBuilderDelegate(
-                (context, i) => PostCard(post: _posts[i]),
+                (context, i) => PostCard(post: _posts[i], onDeleted: refresh),
                 childCount: _posts.length,
               ),
             ),

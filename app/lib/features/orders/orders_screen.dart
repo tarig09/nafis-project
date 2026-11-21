@@ -30,6 +30,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   List<Map<String, dynamic>> _orders = [];
   bool _loading = true;
   String? _busyId;
+  Set<String> _rated = {};
 
   String get _me => supa.auth.currentUser!.id;
 
@@ -51,6 +52,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
           .select()
           .order('created_at', ascending: false)
           .limit(50);
+      try {
+        final r = await supa.from('ratings').select('order_id').eq('client_id', _me);
+        _rated = {for (final e in (r as List)) e['order_id'] as String};
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         _orders = List<Map<String, dynamic>>.from(rows as List);
@@ -104,6 +109,52 @@ class _OrdersScreenState extends State<OrdersScreen> {
       _toast(e.message);
     } catch (_) {
       _toast('تعذر تنفيذ العملية');
+    } finally {
+      if (mounted) setState(() => _busyId = null);
+    }
+  }
+
+  Future<void> _rate(Map<String, dynamic> o) async {
+    int stars = 0;
+    final picked = await showDialog<int>(
+      context: context,
+      builder: (_) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: StatefulBuilder(
+          builder: (ctx, setS) => AlertDialog(
+            title: const Text('قيّم مقدم الخدمة'),
+            content: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var i = 1; i <= 5; i++)
+                  IconButton(
+                    onPressed: () => setS(() => stars = i),
+                    icon: Icon(i <= stars ? Icons.star : Icons.star_border,
+                        color: AppColors.green, size: 32),
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+              FilledButton(
+                onPressed: stars == 0 ? null : () => Navigator.pop(ctx, stars),
+                child: const Text('إرسال'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked == null) return;
+    setState(() => _busyId = o['id'] as String);
+    try {
+      await supa.rpc('rate_order', params: {'p_order': o['id'], 'p_stars': picked});
+      _toast('شكراً لتقييمك');
+      await _load();
+    } on PostgrestException catch (e) {
+      _toast(e.message);
+    } catch (_) {
+      _toast('تعذر إرسال التقييم');
     } finally {
       if (mounted) setState(() => _busyId = null);
     }
@@ -232,6 +283,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
       actions.add(OutlinedButton(
         onPressed: () => showDeliveryView(context, o['id'] as String),
         child: const Text('عرض التسليم'),
+      ));
+    }
+    if (isClient && state == 'completed' && !_rated.contains(o['id'])) {
+      actions.add(const SizedBox(width: 8));
+      actions.add(FilledButton(
+        onPressed: busy ? null : () => _rate(o),
+        style: FilledButton.styleFrom(backgroundColor: AppColors.green),
+        child: const Text('قيّم'),
       ));
     }
     if (isClient && state == 'delivered') {

@@ -68,7 +68,6 @@ class _HomeShellState extends State<HomeShell> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
   }
 
-  void _soon(String what) => _toast('$what قريباً');
 
   Future<void> _openChats() async {
     await Navigator.push(

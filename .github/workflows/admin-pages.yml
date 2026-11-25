@@ -1,0 +1,30 @@
+name: admin-pages
+on:
+  push:
+    branches: [main]
+    paths: ['admin/**', '.github/workflows/admin-pages.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.d.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write config
+        run: |
+          printf 'window.NAFIS_CONFIG = { url: "%s", key: "%s" };\n' "${{ secrets.SUPABASE_URL }}" "${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" > admin/config.js
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: admin
+      - id: d
+        uses: actions/deploy-pages@v4

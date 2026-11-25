@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>نافس — لوحة الإدارة</title>
+<style>
+  :root { --indigo:#4f46e5; --green:#16a34a; --red:#dc2626; --bg:#f3f4f6; --text:#111827; --card:#fff; --line:#e5e7eb; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111827; --text:#f3f4f6; --card:#1f2937; --line:#374151; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, "Segoe UI", Tahoma, sans-serif; background:var(--bg); color:var(--text); }
+  header { background:var(--indigo); color:#fff; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; }
+  header h1 { font-size:18px; margin:0; }
+  main { max-width:820px; margin:0 auto; padding:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin:10px 0; }
+  .center { max-width:380px; margin:48px auto; }
+  input, textarea { width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; margin:6px 0 10px; font:inherit; background:var(--card); color:var(--text); }
+  input[dir=ltr] { text-align:left; }
+  button { font:inherit; padding:9px 14px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--text); cursor:pointer; }
+  button.primary { background:var(--indigo); color:#fff; border-color:var(--indigo); }
+  button.ok { background:var(--green); color:#fff; border-color:var(--green); }
+  button.danger { color:var(--red); border-color:var(--red); }
+  button:disabled { opacity:.5; cursor:default; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .tabs { display:flex; gap:6px; overflow-x:auto; padding:4px 0; }
+  .tabs button { white-space:nowrap; }
+  .tabs button.active { background:var(--indigo); color:#fff; border-color:var(--indigo); }
+  .muted { opacity:.7; font-size:14px; }
+  .msg { padding:8px 12px; border-radius:8px; margin:8px 0; background:#fee2e2; color:#991b1b; }
+  .msg.good { background:#dcfce7; color:#166534; }
+  a { color:var(--indigo); }
+  img { max-width:100%; border-radius:8px; margin:6px 0; }
+  .link { background:none; border:none; color:var(--indigo); padding:0; text-decoration:underline; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>نافس — لوحة الإدارة</h1>
+  <button id="logout" class="hidden">خروج</button>
+</header>
+<main id="app"></main>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const cfg = window.NAFIS_CONFIG || {};
+const app = document.getElementById('app');
+const logoutBtn = document.getElementById('logout');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+if (!cfg.url || !cfg.key) {
+  app.innerHTML = '<div class="card msg">إعدادات الاتصال غير موجودة. تأكد من أسرار المستودع ثم أعد النشر.</div>';
+  throw new Error('no config');
+}
+const sb = supabase.createClient(cfg.url, cfg.key);
+const PAGE_URL = location.origin + location.pathname;
+
+let recovery = location.hash.includes('type=recovery');
+let started = false;
+
+function flash(el, text, good) {
+  el.innerHTML = '<div class="msg' + (good ? ' good' : '') + '">' + esc(text) + '</div>';
+}
+
+// ───────── تسجيل الدخول ─────────
+function showLogin(initialMsg) {
+  logoutBtn.classList.add('hidden');
+  app.innerHTML = `
+    <div class="card center">
+      <h2>تسجيل الدخول</h2>
+      <div id="note"></div>
+      <label>البريد الإلكتروني</label>
+      <input id="email" type="email" dir="ltr" autocomplete="username">
+      <label>كلمة السر</label>
+      <input id="pass" type="password" dir="ltr" autocomplete="current-password">
+      <button id="go" class="primary" style="width:100%">دخول</button>
+      <p><button id="forgot" class="link">نسيت كلمة السر؟</button></p>
+    </div>`;
+  const note = document.getElementById('note');
+  if (initialMsg) flash(note, initialMsg, false);
+  const go = async () => {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('pass').value;
+    if (!email || !password) return flash(note, 'أدخل البريد وكلمة السر');
+    const b = document.getElementById('go'); b.disabled = true;
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    b.disabled = false;
+    if (error) flash(note, 'بيانات الدخول غير صحيحة');
+  };
+  document.getElementById('go').onclick = go;
+  document.getElementById('pass').onkeydown = e => { if (e.key === 'Enter') go(); };
+  document.getElementById('forgot').onclick = async () => {
+    const email = document.getElementById('email').value.trim();
+    if (!email) return flash(note, 'اكتب بريدك أولاً ثم اضغط «نسيت كلمة السر»');
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: PAGE_URL });
+    if (error) flash(note, 'تعذر إرسال الرابط: ' + error.message);
+    else flash(note, 'إن كان البريد مسجلاً فقد أُرسل إليه رابط إعادة التعيين.', true);
+  };
+}
+
+// ───────── تعيين كلمة سر جديدة ─────────
+function showReset() {
+  logoutBtn.classList.add('hidden');
+  app.innerHTML = `
+    <div class="card center">
+      <h2>كلمة سر جديدة</h2>
+      <div id="note"></div>
+      <input id="p1" type="password" dir="ltr" placeholder="كلمة السر الجديدة (8 أحرف على الأقل)">
+      <input id="p2" type="password" dir="ltr" placeholder="أعد كتابتها">
+      <button id="save" class="primary" style="width:100%">حفظ</button>
+    </div>`;
+  const note = document.getElementById('note');
+  document.getElementById('save').onclick = async () => {
+    const a = document.getElementById('p1').value, b = document.getElementById('p2').value;
+    if (a.length < 8) return flash(note, 'كلمة السر قصيرة (8 أحرف على الأقل)');
+    if (a !== b) return flash(note, 'كلمتا السر غير متطابقتين');
+    const { error } = await sb.auth.updateUser({ password: a });
+    if (error) return flash(note, error.message);
+    recovery = false;
+    history.replaceState(null, '', PAGE_URL);
+    await start();
+  };
+}
+
+// ───────── اللوحة ─────────
+const TABS = [
+  ['payments', 'الدفع'], ['disputes', 'النزاعات'], ['reports', 'البلاغات'],
+  ['verify', 'التوثيق'], ['portfolios', 'المعارض'], ['contact', 'التواصل']
+];
+let current = 'payments';
+
+async function start() {
+  if (started) return;
+  started = true;
+  const { data: sess } = await sb.auth.getSession();
+  if (recovery) { started = false; return; }
+  if (!sess.session) { started = false; return showLogin(); }
+  const { data: isAdmin, error } = await sb.rpc('is_admin');
+  if (recovery) { started = false; return; }
+  if (error || isAdmin !== true) {
+    await sb.auth.signOut();
+    started = false;
+    return showLogin('هذا الحساب ليس حساب إدارة.');
+  }
+  logoutBtn.classList.remove('hidden');
+  app.innerHTML = '<div class="tabs" id="tabs"></div><div id="msg"></div><div id="view"></div>';
+  const tabs = document.getElementById('tabs');
+  TABS.forEach(([k, label]) => {
+    const b = document.createElement('button');
+    b.textContent = label; b.dataset.k = k;
+    b.onclick = () => openTab(k);
+    tabs.appendChild(b);
+  });
+  openTab(current);
+}
+
+function openTab(k) {
+  current = k;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.k === k));
+  document.getElementById('msg').innerHTML = '';
+  const view = document.getElementById('view');
+  view.innerHTML = '<p class="muted">جارٍ التحميل…</p>';
+  ({ payments, disputes, reports, verify, portfolios, contact }[k])(view).catch(e => {
+    view.innerHTML = '';
+    flash(document.getElementById('msg'), 'تعذر التحميل: ' + (e.message || e));
+  });
+}
+
+function say(text, good) { flash(document.getElementById('msg'), text, good); }
+
+async function names(ids) {
+  const list = [...new Set(ids.filter(Boolean))];
+  if (!list.length) return {};
+  const { data } = await sb.from('profiles').select('id, display_name').in('id', list);
+  const m = {};
+  (data || []).forEach(p => m[p.id] = p.display_name || 'بدون اسم');
+  return m;
+}
+
+async function signed(bucket, path) {
+  const { data } = await sb.storage.from(bucket).createSignedUrl(path, 3600);
+  return data ? data.signedUrl : null;
+}
+
+async function showImages(box, bucket, paths) {
+  box.innerHTML = '<p class="muted">جارٍ تحميل الصور…</p>';
+  const urls = await Promise.all(paths.map(p => signed(bucket, p)));
+  box.innerHTML = urls.filter(Boolean).map(u => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}"></a>`).join('') || '<p class="muted">لا توجد صور</p>';
+}
+
+async function act(btn, fn, okText) {
+  btn.disabled = true;
+  try {
+    const { error } = await fn();
+    if (error) throw error;
+    say(okText, true);
+    openTab(current);
+  } catch (e) {
+    say(e.message || 'تعذر تنفيذ العملية');
+    btn.disabled = false;
+  }
+}
+
+function empty(view) { view.innerHTML = '<p class="muted">لا شيء للمراجعة.</p>'; }
+
+function mk(html) { const d = document.createElement('div'); d.className = 'card'; d.innerHTML = html; return d; }
+
+function btn(card, label, cls, fn) {
+  const b = document.createElement('button');
+  b.textContent = label; if (cls) b.className = cls;
+  b.onclick = () => fn(b);
+  card.querySelector('.row').appendChild(b);
+  return b;
+}
+
+async function payments(view) {
+  const { data, error } = await sb.from('orders').select('*').eq('state', 'payment_review').order('created_at');
+  if (error) throw error;
+  if (!data.length) return empty(view);
+  const n = await names(data.flatMap(o => [o.client_id, o.freelancer_id]));
+  view.innerHTML = '';
+  data.forEach(o => {
+    const c = mk(`<b>${esc(o.service_type)}</b><div>العميل: ${esc(n[o.client_id])} • المستقل: ${esc(n[o.freelancer_id])}</div>
+      <div>المبلغ المطلوب من العميل: ${esc(o.client_total)}</div><div class="row"></div><div class="imgs"></div>`);
+    btn(c, 'عرض الإثبات', '', () => showImages(c.querySelector('.imgs'), 'payment-proofs', [o.payment_proof_path]));
+    btn(c, 'تأكيد الدفع', 'ok', b => act(b, () => sb.rpc('admin_review_payment', { p_order: o.id, p_ok: true }), 'تم تأكيد الدفع'));
+    btn(c, 'رفض', '', b => act(b, () => sb.rpc('admin_review_payment', { p_order: o.id, p_ok: false }), 'تم رفض الإثبات'));
+    view.appendChild(c);
+  });
+}
+
+async function disputes(view) {
+  const { data, error } = await sb.from('orders').select('*').eq('state', 'disputed').order('created_at');
+  if (error) throw error;
+  if (!data.length) return empty(view);
+  const ids = data.map(o => o.id);
+  const { data: ds } = await sb.from('disputes').select('order_id, reason').in('order_id', ids);
+  const reasons = {}; (ds || []).forEach(d => reasons[d.order_id] = d.reason || '');
+  const n = await names(data.flatMap(o => [o.client_id, o.freelancer_id]));
+  view.innerHTML = '';
+  data.forEach(o => {
+    const c = mk(`<b>${esc(o.service_type)}</b><div>العميل: ${esc(n[o.client_id])} • المستقل: ${esc(n[o.freelancer_id])}</div>
+      <div>وصف الطلب: ${esc(o.description)}</div><div>سبب الشكوى: ${esc(reasons[o.id])}</div>
+      <div class="row"></div><div class="imgs"></div>`);
+    btn(c, 'عرض التسليم', '', async () => {
+      const box = c.querySelector('.imgs');
+      const { data: d } = await sb.from('deliveries').select('*').eq('order_id', o.id).order('created_at', { ascending: false }).limit(1);
+      if (!d || !d.length) { box.innerHTML = '<p class="muted">لا يوجد تسليم</p>'; return; }
+      const x = d[0];
+      box.innerHTML = `<p>${esc(x.description)}</p>` + (x.links || []).map(l => `<div dir="ltr">${esc(l)}</div>`).join('') + '<div class="pics"></div>';
+      if ((x.files || []).length) await showImages(box.querySelector('.pics'), 'deliveries', x.files);
+    });
+    btn(c, 'لصالح المستقل', 'ok', b => act(b, () => sb.rpc('admin_resolve_dispute', { p_order: o.id, p_match: 100 }), 'تم تحويل المبلغ للمستقل'));
+    btn(c, 'لصالح العميل', 'primary', b => act(b, () => sb.rpc('admin_resolve_dispute', { p_order: o.id, p_match: 0 }), 'تم استرداد المبلغ للعميل'));
+    view.appendChild(c);
+  });
+}
+
+const CATS = { sexual: 'محتوى جنسي', community: 'مخالفة قواعد المجتمع', delivery: 'شكوى تسليم' };
+
+async function reports(view) {
+  const { data, error } = await sb.from('reports').select('*').eq('status', 'open').order('created_at');
+  if (error) throw error;
+  if (!data.length) return empty(view);
+  const n = await names(data.flatMap(r => [r.reporter_id, r.target_id]));
+  view.innerHTML = '';
+  data.forEach(r => {
+    const c = mk(`<b>${esc(CATS[r.category] || r.category)}</b><div>المُبلِّغ: ${esc(n[r.reporter_id])}</div>
+      <div>المُبلَّغ عنه: ${esc(n[r.target_id])}</div><div style="white-space:pre-wrap">${esc(r.details)}</div><div class="row"></div>`);
+    btn(c, 'تأكيد البلاغ', 'primary', b => act(b, () => sb.from('reports').update({ status: 'confirmed' }).eq('id', r.id), 'تم تأكيد البلاغ'));
+    btn(c, 'رفض البلاغ', '', b => act(b, () => sb.from('reports').update({ status: 'dismissed' }).eq('id', r.id), 'تم رفض البلاغ'));
+    btn(c, 'تحذير الحساب', '', b => act(b, () => sb.rpc('admin_set_status', { uid: r.target_id, s: 'warned' }), 'تم تحذير الحساب'));
+    btn(c, 'حظر الحساب', 'danger', b => { if (confirm('تأكيد حظر الحساب؟')) act(b, () => sb.rpc('admin_set_status', { uid: r.target_id, s: 'banned' }), 'تم حظر الحساب'); });
+    view.appendChild(c);
+  });
+}
+
+async function verify(view) {
+  const { data, error } = await sb.from('verification_requests').select('*').eq('status', 'pending').order('created_at');
+  if (error) throw error;
+  if (!data.length) return empty(view);
+  const n = await names(data.map(v => v.user_id));
+  view.innerHTML = '';
+  data.forEach(v => {
+    const c = mk(`<b>طلب توثيق: ${esc(n[v.user_id])}</b><div>عدد النماذج: ${(v.samples || []).length}</div><div class="row"></div><div class="imgs"></div>`);
+    btn(c, 'عرض النماذج', '', () => showImages(c.querySelector('.imgs'), 'verification-samples', v.samples || []));
+    btn(c, 'توثيق', 'ok', b => act(b, () => sb.rpc('admin_review_verification', { p_req: v.id, p_ok: true }), 'تم توثيق الحساب'));
+    btn(c, 'رفض', '', b => act(b, () => sb.rpc('admin_review_verification', { p_req: v.id, p_ok: false }), 'تم رفض الطلب'));
+    view.appendChild(c);
+  });
+}
+
+async function portfolios(view) {
+  const { data, error } = await sb.from('profiles').select('id, display_name, portfolio_url').not('portfolio_url', 'is', null).eq('portfolio_approved', false);
+  if (error) throw error;
+  if (!data.length) return empty(view);
+  view.innerHTML = '';
+  data.forEach(p => {
+    const c = mk(`<b>${esc(p.display_name)}</b><div dir="ltr" style="word-break:break-all">${esc(p.portfolio_url)}</div><div class="row"></div>`);
+    btn(c, 'موافقة', 'ok', b => act(b, () => sb.rpc('admin_review_portfolio', { p_uid: p.id, p_ok: true }), 'تمت الموافقة على الرابط'));
+    btn(c, 'رفض', '', b => act(b, () => sb.rpc('admin_review_portfolio', { p_uid: p.id, p_ok: false }), 'تم رفض الرابط'));
+    view.appendChild(c);
+  });
+}
+
+async function contact(view) {
+  const { data, error } = await sb.from('app_settings').select('key, value');
+  if (error) throw error;
+  const m = {}; (data || []).forEach(r => m[r.key] = r.value);
+  view.innerHTML = `<div class="card"><p class="muted">تظهر هذه البيانات للمستخدمين في «تواصل معنا». اترك الحقل فارغاً لإخفائه.</p>
+    <label>البريد الإلكتروني</label><input id="ce" dir="ltr" value="${esc(m.contact_email || '')}">
+    <label>رقم واتساب (مع رمز الدولة)</label><input id="cw" dir="ltr" value="${esc(m.contact_whatsapp || '')}">
+    <button id="cs" class="primary">حفظ</button></div>`;
+  document.getElementById('cs').onclick = () => {
+    const btnEl = document.getElementById('cs');
+    act(btnEl, () => sb.from('app_settings').upsert([
+      { key: 'contact_email', value: document.getElementById('ce').value.trim() },
+      { key: 'contact_whatsapp', value: document.getElementById('cw').value.trim() }
+    ]), 'تم حفظ بيانات التواصل');
+  };
+}
+
+logoutBtn.onclick = async () => { await sb.auth.signOut(); };
+
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY') { recovery = true; started = false; showReset(); return; }
+  if (recovery) return;
+  if (event === 'SIGNED_OUT') { started = false; showLogin(); return; }
+  if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) { setTimeout(start, 0); }
+  else if (event === 'INITIAL_SESSION' && !session) { showLogin(); }
+});
+</script>
+</body>
+</html>

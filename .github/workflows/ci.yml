@@ -40,10 +40,6 @@ jobs:
           flutter build apk --release
           --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           --dart-define=SUPABASE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: nafis-apk
-          path: app/build/app/outputs/flutter-apk/app-release.apk
       - name: Publish APK to Releases
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: ncipollo/release-action@v1

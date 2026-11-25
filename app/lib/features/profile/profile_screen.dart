@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/session.dart';
 import '../../core/supa.dart';
+import '../reports/report_dialog.dart';
 import '../../core/theme.dart';
 import '../../data/posts_repo.dart';
 import '../../models/post.dart';
@@ -239,6 +240,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (widget.embedded) return _content();
-    return Scaffold(appBar: AppBar(), body: _content());
+    return Scaffold(
+      appBar: AppBar(
+        actions: [
+          if (!_isMe)
+            PopupMenuButton<String>(
+              onSelected: (_) => showReportDialog(context, targetId: widget.userId),
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'report', child: Text('إبلاغ عن المستخدم')),
+              ],
+            ),
+        ],
+      ),
+      body: _content(),
+    );
   }
 }

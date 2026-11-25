@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/format.dart';
 import '../core/session.dart';
 import '../core/supa.dart';
 import '../core/theme.dart';
 import '../features/chat/open_chat.dart';
 import '../features/profile/profile_screen.dart';
+import '../features/reports/report_dialog.dart';
 import '../models/post.dart';
 import 'post_images.dart';
 
@@ -14,6 +16,41 @@ class PostCard extends StatelessWidget {
   final VoidCallback? onDeleted;
   const PostCard(
       {super.key, required this.post, this.linkAuthor = true, this.onDeleted});
+
+  Future<void> _edit(BuildContext context) async {
+    final ctrl = TextEditingController(text: post.body);
+    final text = await showDialog<String>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('تعديل المنشور'),
+          content: TextField(controller: ctrl, maxLines: 6, maxLength: 1000),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+                child: const Text('حفظ')),
+          ],
+        ),
+      ),
+    );
+    ctrl.dispose();
+    if (text == null || text.isEmpty || text == post.body) return;
+    try {
+      await supa.rpc('edit_post', params: {'p_post': post.id, 'p_body': text});
+      onDeleted?.call();
+    } on PostgrestException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('تعذر تعديل المنشور')));
+      }
+    }
+  }
 
   Future<void> _delete(BuildContext context) async {
     final ok = await showDialog<bool>(
@@ -143,13 +180,25 @@ class PostCard extends StatelessWidget {
                       style: TextStyle(
                           fontSize: 12, color: c, fontWeight: FontWeight.w600)),
                 ),
-                if (supa.auth.currentUser?.id == post.authorId)
-                  PopupMenuButton<String>(
-                    onSelected: (_) => _delete(context),
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'delete', child: Text('حذف المنشور')),
-                    ],
-                  ),
+                PopupMenuButton<String>(
+                  onSelected: (v) {
+                    if (v == 'delete') {
+                      _delete(context);
+                    } else if (v == 'edit') {
+                      _edit(context);
+                    } else {
+                      showReportDialog(context, targetId: post.authorId, postId: post.id);
+                    }
+                  },
+                  itemBuilder: (_) => supa.auth.currentUser?.id == post.authorId
+                      ? const [
+                          PopupMenuItem(value: 'edit', child: Text('تعديل المنشور')),
+                          PopupMenuItem(value: 'delete', child: Text('حذف المنشور')),
+                        ]
+                      : const [
+                          PopupMenuItem(value: 'report', child: Text('إبلاغ عن المنشور')),
+                        ],
+                ),
               ],
             ),
           ),

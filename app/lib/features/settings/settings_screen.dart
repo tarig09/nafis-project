@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/session.dart';
 import '../../core/supa.dart';
+import '../verification/verification_screen.dart';
 import 'edit_profile_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -24,6 +25,14 @@ class SettingsScreen extends StatelessWidget {
               onTap: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const EditProfileScreen())),
             ),
+            if (AppSession.isFreelancer)
+              ListTile(
+                leading: const Icon(Icons.verified_outlined),
+                title: const Text('توثيق الحساب'),
+                subtitle: const Text('أرسل نماذج أعمالك للمراجعة'),
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const VerificationScreen())),
+              ),
             const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.alternate_email),

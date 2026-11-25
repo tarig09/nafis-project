@@ -260,7 +260,9 @@ class _ChatScreenState extends State<ChatScreen> {
         margin: const EdgeInsets.symmetric(vertical: 3),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: mine ? AppColors.indigo : const Color(0xFFF3F4F6),
+          color: m['kind'] == 'delivery'
+              ? AppColors.green
+              : (mine ? AppColors.indigo : const Color(0xFFF3F4F6)),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Column(
@@ -269,7 +271,8 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             Text(m['body'] as String,
                 style: TextStyle(
-                    color: mine ? Colors.white : AppColors.text, height: 1.5)),
+                    color: (mine || m['kind'] == 'delivery') ? Colors.white : AppColors.text,
+                    height: 1.5)),
             const SizedBox(height: 4),
             Row(
               mainAxisSize: MainAxisSize.min,
